@@ -1,0 +1,117 @@
+{
+  "schema_version": "1.0",
+  "protocol": "render-debug-autonomous-graphics",
+  "command_from_workspace_root": "python -m image_analysis_tools.render_debug",
+  "budgets": {
+    "baseline_max_queries": 3,
+    "hypothesis_max_queries": 3,
+    "verification_max_queries": 2,
+    "default_hard_query_limit": 8,
+    "maximum_spatial_grid_cells": 16,
+    "maximum_spatial_grids_per_hypothesis": 1
+  },
+  "activation": {
+    "required_when_artifact_exists": [
+      "geometry or LOD change",
+      "shader or material change",
+      "lighting or shadow change",
+      "camera, projection, or viewport change",
+      "texture, sampler, or asset-import change",
+      "post-processing or color-management change",
+      "render-target, compositing, or alpha change",
+      "visual regression investigation"
+    ],
+    "skip_when": [
+      "no image artifact exists",
+      "the task cannot affect rendered pixels",
+      "the only unresolved question requires semantic object recognition"
+    ]
+  },
+  "stages": [
+    {
+      "id": "baseline",
+      "maximum_queries": 3,
+      "purpose": "Characterize an unknown artifact before choosing a diagnosis.",
+      "default_evaluators": ["count", "statistics", "dominant-colors"],
+      "skip_when": "A numerical acceptance criterion or specific hypothesis is already supplied."
+    },
+    {
+      "id": "hypothesis",
+      "maximum_queries": 3,
+      "purpose": "Test one stated explanation with the smallest discriminating measurements.",
+      "requirements": [
+        "State the hypothesis before querying.",
+        "State the predicted metric if the hypothesis is true.",
+        "State the result that would reject the hypothesis.",
+        "Run only queries capable of changing the next decision."
+      ]
+    },
+    {
+      "id": "verification",
+      "maximum_queries": 2,
+      "purpose": "Compare the post-change artifact with the baseline or acceptance criterion.",
+      "preferred_evaluators": ["match", "error", "color-difference"],
+      "requirements": [
+        "Reuse the baseline selection and parameters.",
+        "Use direct two-image comparison only when dimensions and channels are compatible.",
+        "Report pass or fail against an explicit threshold."
+      ]
+    }
+  ],
+  "recipes": {
+    "regression": {
+      "evaluators": ["match", "error", "channel-error"],
+      "query_limit": 2
+    },
+    "exposure_or_clipping": {
+      "evaluators": ["percentiles", "histogram", "occupancy"],
+      "query_limit": 3
+    },
+    "color_shift": {
+      "evaluators": ["average-color", "color-difference", "channel-error"],
+      "query_limit": 2
+    },
+    "alpha_or_compositing": {
+      "evaluators": ["min-max", "statistics", "occupancy"],
+      "query_limit": 3
+    },
+    "flat_or_low_detail_region": {
+      "evaluators": ["dominant-colors", "statistics", "color-count"],
+      "query_limit": 3
+    },
+    "spatial_anomaly": {
+      "evaluators": ["average-color", "occupancy", "color-count"],
+      "query_limit": 3,
+      "constraints": [
+        "Use at most one grid of no more than 16 cells.",
+        "Narrow the region before increasing spatial resolution."
+      ]
+    },
+    "exact_sampling": {
+      "evaluators": ["pixel-value", "nearest-color"],
+      "query_limit": 2
+    },
+    "cubemap": {
+      "evaluators": ["pixel-value", "average-color", "statistics"],
+      "query_limit": 3
+    }
+  },
+  "stop_conditions": [
+    "The stated hypothesis is supported or rejected.",
+    "The acceptance criterion has passed or failed.",
+    "Two successive queries did not reduce uncertainty.",
+    "Another query would not change the next implementation decision.",
+    "The remaining uncertainty is semantic and requires visual or user context.",
+    "The default hard query limit has been reached."
+  ],
+  "prohibited_behaviors": [
+    "Running every evaluator speculatively.",
+    "Repeating equivalent statistics without a stated reason.",
+    "Using dense spatial grids before stating a hypothesis.",
+    "Inferring object identity from color statistics alone.",
+    "Resizing incompatible images to force a comparison.",
+    "Continuing after a stop condition without explaining the exception."
+  ],
+  "report_fields": ["observation", "inference", "confidence", "alternatives", "action", "reproduction_command"]
+}
+
