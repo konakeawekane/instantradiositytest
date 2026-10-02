@@ -20,12 +20,12 @@
 @group(2) @binding(15) var direct_output:texture_storage_2d<rgba32float,write>;
 @group(2) @binding(16) var direct_lighting:texture_2d<f32>;
 fn vpl_sample_valid(r:Reservoir)->bool {
-    return r.generation==frame.size.w&&r.selected_target>0.&&r.id<frame.counts.y&&frame.size.z-r.source<=u32(frame.temporal.w);
+    return r.generation==frame.size.w&&r.selected_target>0.&&r.id<frame.counts.y&&frame.size.z-r.source<=u32(frame.rr.z);
 }
 fn selected_vpl(r:Reservoir)->Vpl {
     if r.source==frame.size.z {return current_vpls[r.id];}
     if r.source+1u==frame.size.z {return previous_vpls[r.id];}
-    return archived_vpls[(r.source%(u32(frame.temporal.w)+1u))*frame.counts.y+r.id];
+    return archived_vpls[(r.source%(u32(frame.rr.z)+1u))*frame.counts.y+r.id];
 }
 fn surface(p:vec2<u32>)->Surface {
     let coord=vec2<i32>(p);let rm=textureLoad(params,coord,0).xy;var s:Surface;
@@ -66,8 +66,8 @@ fn cap(r:Reservoir,limit:u32)->Reservoir {var a=r;if a.count>limit {a.sum*=f32(l
 @compute @workgroup_size(8,8) fn temporal_direct(@builtin(global_invocation_id) g:vec3<u32>) {
     if any(g.xy>=frame.size.xy){return;}let id=g.y*frame.size.x+g.x;var r=direct_in[id];let q=reproject(g.xy);var rng=seed(id,17u);
     if valid(g.xy)&&history_valid(g.xy,q) {
-        let previous=cap(direct_history[u32(q.y)*frame.size.x+u32(q.x)],u32(frame.temporal.w)*frame.restir.x);
-        if previous.generation==frame.size.w && previous.selected_target>0. && previous.id<frame.counts.x {
+        let previous=cap(direct_history[u32(q.y)*frame.size.x+u32(q.x)],u32(frame.rr.z)*frame.restir.x);
+        if previous.generation==frame.size.w && previous.selected_target>0. && previous.id<frame.counts.x && previous.age<u32(frame.rr.z) {
             let selected_target=luminance(direct(surface(g.xy),previous.id));add(&r,previous.id,previous.source,selected_target,previous.pdf,selected_target*normalization(previous)*f32(previous.count),previous.count,previous.age+1u,&rng);
         }
     }direct_out[id]=r;
@@ -75,7 +75,7 @@ fn cap(r:Reservoir,limit:u32)->Reservoir {var a=r;if a.count>limit {a.sum*=f32(l
 @compute @workgroup_size(8,8) fn temporal_indirect(@builtin(global_invocation_id) g:vec3<u32>) {
     if any(g.xy>=frame.size.xy){return;}let id=g.y*frame.size.x+g.x;var r=indirect_in[id];let q=reproject(g.xy);var rng=seed(id,19u);
     if valid(g.xy)&&history_valid(g.xy,q) {
-        let previous=cap(indirect_history[u32(q.y)*frame.size.x+u32(q.x)],u32(frame.temporal.w)*frame.restir.y);
+        let previous=cap(indirect_history[u32(q.y)*frame.size.x+u32(q.x)],u32(frame.rr.z)*frame.restir.y);
         if vpl_sample_valid(previous) {
             let v=selected_vpl(previous);
             let selected_target=luminance(indirect(surface(g.xy),v));
@@ -93,7 +93,7 @@ fn neighbor(p:vec2<u32>,rng:ptr<function,u32>)->vec2<i32> {
         let q=neighbor(g.xy,&rng);if any(q<vec2<i32>(0))||any(q>=vec2<i32>(frame.size.xy)){continue;}
         if !compatible(s,vec2<u32>(q)){continue;}let previous=direct_in[u32(q.y)*frame.size.x+u32(q.x)];
         if previous.selected_target>0. {let selected_target=luminance(direct(s,previous.id));add(&r,previous.id,previous.source,selected_target,previous.pdf,selected_target*normalization(previous)*f32(previous.count),previous.count,previous.age,&rng);}
-    }}direct_out[id]=cap(r,u32(frame.temporal.w)*frame.restir.x*8u);
+    }}direct_out[id]=cap(r,u32(frame.rr.z)*frame.restir.x*8u);
 }
 @compute @workgroup_size(8,8) fn spatial_indirect(@builtin(global_invocation_id) g:vec3<u32>) {
     if any(g.xy>=frame.size.xy){return;}let id=g.y*frame.size.x+g.x;var r=indirect_in[id];var rng=seed(id,29u);
@@ -101,7 +101,7 @@ fn neighbor(p:vec2<u32>,rng:ptr<function,u32>)->vec2<i32> {
         let q=neighbor(g.xy,&rng);if any(q<vec2<i32>(0))||any(q>=vec2<i32>(frame.size.xy)){continue;}
         if !compatible(s,vec2<u32>(q)){continue;}let previous=indirect_in[u32(q.y)*frame.size.x+u32(q.x)];
         if vpl_sample_valid(previous) {let selected_target=luminance(indirect(s,selected_vpl(previous)));add(&r,previous.id,previous.source,selected_target,previous.pdf,selected_target*normalization(previous)*f32(previous.count),previous.count,previous.age,&rng);}
-    }}indirect_out[id]=cap(r,u32(frame.temporal.w)*frame.restir.y*8u);
+    }}indirect_out[id]=cap(r,u32(frame.rr.z)*frame.restir.y*8u);
 }
 @compute @workgroup_size(8,8) fn resolve_direct(@builtin(global_invocation_id) g:vec3<u32>) {
     if any(g.xy>=frame.size.xy){return;}let id=g.y*frame.size.x+g.x;var result=vec3<f32>(0.);
@@ -131,30 +131,4 @@ fn neighbor(p:vec2<u32>,rng:ptr<function,u32>)->vec2<i32> {
         }
     }
     textureStore(output,vec2<i32>(g.xy),vec4<f32>(min(result,vec3<f32>(65000.)),1.));
-}
-@compute @workgroup_size(8,8) fn denoise(@builtin(global_invocation_id) g:vec3<u32>) {
-    if any(g.xy>=frame.size.xy){return;}let p=vec2<i32>(g.xy);let current=textureLoad(current_lighting,p,0).rgb;let q=reproject(g.xy);
-    // ReSTIR evaluates visibility only for the selected sample.  Neighbouring
-    // samples on the same surface therefore give independent, useful estimates
-    // of the same illumination.  Reconstruct them before temporal accumulation;
-    // `compatible` rejects depth/normal discontinuities, preserving silhouettes.
-    var filtered=current;var filtered_count=1.;
-    if valid(g.xy) {
-        let s=surface(g.xy);
-        for(var y=-2;y<=2;y++){for(var x=-2;x<=2;x++){
-            if x==0&&y==0 {continue;}
-            let n=clamp(p+vec2<i32>(x,y),vec2<i32>(0),vec2<i32>(frame.size.xy)-1);
-            if compatible(s,vec2<u32>(n)) {filtered+=textureLoad(current_lighting,n,0).rgb;filtered_count+=1.;}
-        }}
-        filtered/=filtered_count;
-    }
-    var result=filtered;var age=1.;
-    if valid(g.xy)&&history_valid(g.xy,q)&&frame.flags.z<3u {
-        let h=textureLoad(previous_lighting,q,0);age=min(h.a+1.,frame.temporal.w);
-        var low=1e20;var high=0.;
-        for(var y=-2;y<=2;y++){for(var x=-2;x<=2;x++){let n=clamp(p+vec2<i32>(x,y),vec2<i32>(0),vec2<i32>(frame.size.xy)-1);let l=luminance(textureLoad(current_lighting,n,0).rgb);low=min(low,l);high=max(high,l);}}
-        let history=h.rgb*clamp(luminance(h.rgb),low*.5,high*1.5+.001)/max(luminance(h.rgb),.000001);
-        let weight=min(frame.temporal.x,(age-1.)/age);result=mix(filtered,history,weight);
-    }
-    textureStore(output,p,vec4<f32>(result,age));
 }

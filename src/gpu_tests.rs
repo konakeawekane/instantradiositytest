@@ -78,6 +78,110 @@ pub(super) fn frame(renderer: &mut Renderer, scene: &Scene) {
 
 #[test]
 #[ignore = "requires native Vulkan hardware ray queries and exported test scene"]
+fn gpu_integration_svgf_noise_edges_and_disocclusion() {
+    let mut scene = Scene::load(Path::new("assets/test_scene/scene.json")).unwrap();
+    let mut settings = Settings::load(Path::new("settings.json")).unwrap();
+    settings.render_width = 160;
+    settings.render_height = 100;
+    let mut renderer = pollster::block_on(Renderer::new(&scene, settings)).unwrap();
+    let mut rng = 123456789u32;
+    let mut last = None;
+    for _ in 0..12 {
+        frame(&mut renderer, &scene);
+        let signal: Vec<_> = (0..16000)
+            .map(|_| {
+                rng ^= rng << 13;
+                rng ^= rng >> 17;
+                rng ^= rng << 5;
+                let v = if rng & 1 == 0 { 0. } else { 2. };
+                [v, v, v, 1.]
+            })
+            .collect();
+        last = Some(renderer.test_svgf_signal(&signal, false, false));
+    }
+    let (filtered, moments, depth) = last.unwrap();
+    let mut error = 0.;
+    let mut mean = 0.;
+    let mut count = 0.;
+    for (i, d) in depth.iter().enumerate() {
+        if *d >= 1. {
+            continue;
+        }
+        let v = filtered[i * 4];
+        assert!(v.is_finite() && filtered[i * 4 + 3].is_finite());
+        assert!(moments[i * 4 + 1] >= 0. && moments[i * 4 + 1].is_finite());
+        error += (v - 1.).powi(2);
+        mean += v;
+        count += 1.;
+    }
+    println!(
+        "SVGF binary-noise MSE: {}, mean: {}",
+        error / count,
+        mean / count
+    );
+    assert!(
+        error / count < 0.1,
+        "SVGF must remove at least 90% of the known unit input MSE"
+    );
+    assert!(
+        (mean / count - 1.).abs() < 0.04,
+        "SVGF must preserve mean radiance"
+    );
+    // Force a fresh lighting generation and a material boundary.  Spatial
+    // filtering must preserve it even though neighbouring geometry is planar.
+    scene.changed();
+    frame(&mut renderer, &scene);
+    let signal: Vec<_> = (0..16000)
+        .map(|i| {
+            let v = if i % 160 < 80 { 0.5 } else { 2. };
+            [v, v, v, 1.]
+        })
+        .collect();
+    let (filtered, _, depth) = renderer.test_svgf_signal(&signal, true, false);
+    let mut edge_count = 0;
+    for (i, d) in depth.iter().enumerate() {
+        if *d < 1. && (78..=81).contains(&(i % 160)) {
+            assert!(
+                (filtered[i * 4] - signal[i][0]).abs() < 0.02,
+                "material edge bled across pixel {i}"
+            );
+            edge_count += 1;
+        }
+    }
+    assert!(edge_count > 20);
+    // An out-of-bounds reprojection must start moments/history at one frame.
+    frame(&mut renderer, &scene);
+    let (_, moments, depth) = renderer.test_svgf_signal(&signal, false, true);
+    for (i, d) in depth.iter().enumerate() {
+        if *d < 1. {
+            assert_eq!(moments[i * 4 + 2], 1.);
+        }
+    }
+    scene.changed();
+    frame(&mut renderer, &scene);
+    let hdr: Vec<_> = (0..16000)
+        .map(|i| {
+            let v = if i % 2 == 0 { 0. } else { 60000. };
+            [v, v, v, 1.]
+        })
+        .collect();
+    let (filtered, moments, _) = renderer.test_svgf_signal(&hdr, false, false);
+    assert!(
+        filtered.iter().all(|v| v.is_finite()),
+        "HDR wavelet radiance/variance must stay finite"
+    );
+    assert!(
+        moments.iter().all(|v| v.is_finite()),
+        "HDR squared luminance must not overflow"
+    );
+    assert!(
+        moments.as_chunks::<4>().0.iter().any(|m| m[1] > 65504.),
+        "moments require float32 range rather than float16"
+    );
+}
+
+#[test]
+#[ignore = "requires native Vulkan hardware ray queries and exported test scene"]
 fn gpu_integration_lighting_history_and_motion() {
     let mut scene = Scene::load(Path::new("assets/test_scene/scene.json")).unwrap();
     let mut settings = Settings::load(Path::new("settings.json")).unwrap();
@@ -92,15 +196,25 @@ fn gpu_integration_lighting_history_and_motion() {
         renderer.test_history_max_age() >= 16.,
         "static surfaces must accumulate temporal HDR history rather than restarting every frame"
     );
+    assert!(
+        renderer.test_history_mature_fraction(16.) > 0.25,
+        "temporal reconstruction must retain history across the visible static surfaces"
+    );
     for indirect in [false, true] {
         let (count, age) = renderer.test_reservoir_maturity(indirect);
         assert!(
-            count >= 256,
+            count
+                >= renderer.settings.restir_max_history
+                    * renderer.settings.restir_direct_candidates,
             "final reservoir must retain temporal candidates: {count}"
         );
         assert!(
-            age >= 8,
-            "stable temporal reservoir must retain selected samples: {age}"
+            age >= 1 && age <= renderer.settings.restir_max_history,
+            "ReSTIR selection must reuse samples within its short lifetime: {age}"
+        );
+        assert!(
+            renderer.test_reservoir_mature_fraction(indirect, 1) > 0.1,
+            "ReSTIR reservoirs must reuse temporal samples across static surfaces"
         );
     }
     renderer.test_transport_resources();
@@ -122,6 +236,13 @@ fn gpu_integration_lighting_history_and_motion() {
     frame(&mut renderer, &scene);
     assert_eq!(generation, scene.generation);
     renderer.test_motion_nonzero();
+    renderer.debug_mode = 2;
+    frame(&mut renderer, &scene);
+    assert_eq!(
+        renderer.test_history_max_age(),
+        1.,
+        "debug lighting changes must invalidate SVGF history"
+    );
     scene.manifest.objects[0].transform.position += Vec3::X * 0.2;
     scene.changed();
     frame(&mut renderer, &scene);

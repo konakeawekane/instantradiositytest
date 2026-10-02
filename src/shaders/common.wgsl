@@ -3,6 +3,7 @@ const PI: f32 = 3.14159265359;
 struct Frame {
     vp: mat4x4<f32>, inv_vp: mat4x4<f32>, previous_vp: mat4x4<f32>, previous_inv_vp: mat4x4<f32>,
     camera: vec4<f32>, size: vec4<u32>, counts: vec4<u32>, restir: vec4<u32>,
+    // temporal.w caps SVGF history; rr.z independently caps ReSTIR history.
     temporal: vec4<f32>, sdf: vec4<f32>, rr: vec4<f32>, flags: vec4<u32>,
 };
 struct Object {model:mat4x4<f32>, previous:mat4x4<f32>, inverse:mat4x4<f32>, info:vec4<u32>};

@@ -1,4 +1,4 @@
-﻿use anyhow::{Result, ensure};
+use anyhow::{Result, ensure};
 use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -17,10 +17,20 @@ pub struct Settings {
     pub normal_threshold: f32,
     pub temporal_history_weight: f32,
     pub temporal_max_history: u32,
+    #[serde(default = "default_restir_history")]
+    pub restir_max_history: u32,
+    #[serde(default = "default_svgf_iterations")]
+    pub svgf_iterations: u32,
     pub sdf_max_steps: u32,
     pub sdf_hit_epsilon: f32,
     pub sdf_soft_shadow_k: f32,
     pub target_frame_ms: f32,
+}
+fn default_restir_history() -> u32 {
+    4
+}
+fn default_svgf_iterations() -> u32 {
+    4
 }
 
 impl Settings {
@@ -58,6 +68,13 @@ impl Settings {
                 && self.restir_spatial_neighbors <= 32
                 && self.restir_spatial_radius <= 256,
             "invalid ReSTIR settings"
+        );
+        ensure!(
+            self.restir_max_history > 0
+                && self.restir_max_history <= 32
+                && self.svgf_iterations > 0
+                && self.svgf_iterations <= 5,
+            "invalid ReSTIR history/SVGF iteration count"
         );
         ensure!(
             self.temporal_history_weight >= 0.
@@ -99,6 +116,10 @@ mod tests {
             |s: &mut Settings| s.render_width = 0,
             |s: &mut Settings| s.vpl_count = 0,
             |s: &mut Settings| s.temporal_max_history = 0,
+            |s: &mut Settings| s.restir_max_history = 0,
+            |s: &mut Settings| s.restir_max_history = 33,
+            |s: &mut Settings| s.svgf_iterations = 0,
+            |s: &mut Settings| s.svgf_iterations = 6,
             |s: &mut Settings| s.sdf_hit_epsilon = f32::INFINITY,
             |s: &mut Settings| s.vpl_rr_max_survival = 1.,
             |s: &mut Settings| s.depth_threshold = f32::NAN,

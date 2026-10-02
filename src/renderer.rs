@@ -69,7 +69,7 @@ pub struct Target {
     pub view: wgpu::TextureView,
 }
 impl Target {
-    fn new(
+    pub(crate) fn new(
         d: &wgpu::Device,
         label: &str,
         w: u32,
@@ -131,6 +131,7 @@ pub struct Renderer {
     direct_lighting: Target,
     unused_lighting_output: Target,
     histories: [Target; 2],
+    svgf: crate::svgf::Svgf,
     pub display: Target,
     gbuffer_group: wgpu::BindGroup,
     direct: [wgpu::Buffer; 3],
@@ -150,6 +151,7 @@ pub struct Renderer {
     previous_vp: Mat4,
     frame_index: u32,
     previous_generation: u32,
+    previous_debug: u32,
     pub debug_mode: u32,
     pub last_gpu_ms: Option<f64>,
     pub last_pass_ms: HashMap<&'static str, f64>,
@@ -268,6 +270,7 @@ pub fn shader_source(stage: &str) -> String {
             include_str!("shaders/lighting.wgsl")
         ),
         "present" => include_str!("shaders/present.wgsl").to_string(),
+        "svgf" => format!("{common}\n{}", include_str!("shaders/svgf.wgsl")),
         _ => unreachable!(),
     }
 }
@@ -463,7 +466,7 @@ impl Renderer {
         let bytes = crate::gpu_tests::buffer(self, &self.vpls[current]);
         assert_eq!(bytes.len(), self.settings.vpl_count as usize * 48);
         let archive = crate::gpu_tests::buffer(self, &self.archived_vpls);
-        let offset = ((self.frame_index - 1) % (self.settings.temporal_max_history + 1)) as usize
+        let offset = ((self.frame_index - 1) % (self.settings.restir_max_history + 1)) as usize
             * bytes.len();
         assert_eq!(
             bytes,
@@ -543,16 +546,99 @@ impl Renderer {
     #[cfg(test)]
     pub(crate) fn test_history_max_age(&self) -> f32 {
         let current = ((self.frame_index - 1) % 2) as usize;
-        crate::gpu_tests::floats(&crate::gpu_tests::texture(
+        crate::gpu_tests::texture(self, &self.svgf.moments[current].texture, 16)
+            .as_chunks::<16>()
+            .0
+            .iter()
+            .map(|pixel| f32::from_le_bytes(pixel[8..12].try_into().unwrap()))
+            .fold(0., f32::max)
+    }
+    #[cfg(test)]
+    pub(crate) fn test_svgf_signal(
+        &self,
+        signal: &[[f32; 4]],
+        material_edge: bool,
+        disoccluded: bool,
+    ) -> (Vec<f32>, Vec<f32>, Vec<f32>) {
+        let write_half = |target: &Target, values: &[f32], channels: u32| {
+            let data: Vec<u16> = values
+                .iter()
+                .map(|v| half::f16::from_f32(*v).to_bits())
+                .collect();
+            self.queue.write_texture(
+                target.texture.as_image_copy(),
+                bytemuck::cast_slice(&data),
+                wgpu::TexelCopyBufferLayout {
+                    offset: 0,
+                    bytes_per_row: Some(self.settings.render_width * channels * 2),
+                    rows_per_image: None,
+                },
+                target.texture.size(),
+            );
+        };
+        write_half(&self.lighting, bytemuck::cast_slice(signal), 4);
+        if material_edge {
+            let colors: Vec<f32> = (0..signal.len())
+                .flat_map(|i| {
+                    if i as u32 % self.settings.render_width < self.settings.render_width / 2 {
+                        [1., 0., 0., 1.]
+                    } else {
+                        [0., 1., 0., 1.]
+                    }
+                })
+                .collect();
+            write_half(&self.color, &colors, 4);
+        }
+        if disoccluded {
+            write_half(&self.motion, &vec![2.; signal.len() * 2], 2);
+        }
+        let current = ((self.frame_index - 1) % 2) as usize;
+        let mut e = self.device.create_command_encoder(&Default::default());
+        self.svgf.encode(
+            &self.device,
+            &mut e,
+            &self.common,
+            &self.gbuffer_group,
+            &self.lighting,
+            &self.histories[current],
+            &self.previous_depth,
+            &self.previous_normal,
+            current,
+            self.settings.svgf_iterations,
+            0,
+        );
+        self.queue.submit([e.finish()]);
+        self.wait().unwrap();
+        let rgba = crate::gpu_tests::floats(&crate::gpu_tests::texture(
             self,
             &self.histories[current].texture,
             8,
-        ))
-        .as_chunks::<4>()
-        .0
-        .iter()
-        .map(|pixel| pixel[3])
-        .fold(0., f32::max)
+        ));
+        let read_float = |target: &Target, bpp| {
+            crate::gpu_tests::texture(self, &target.texture, bpp)
+                .as_chunks::<4>()
+                .0
+                .iter()
+                .map(|b| f32::from_le_bytes(*b))
+                .collect()
+        };
+        (
+            rgba,
+            read_float(&self.svgf.moments[current], 16),
+            read_float(&self.depth, 4),
+        )
+    }
+    #[cfg(test)]
+    pub(crate) fn test_history_mature_fraction(&self, minimum_age: f32) -> f32 {
+        let current = ((self.frame_index - 1) % 2) as usize;
+        let ages = crate::gpu_tests::texture(self, &self.svgf.moments[current].texture, 16);
+        let mature = ages
+            .as_chunks::<16>()
+            .0
+            .iter()
+            .filter(|pixel| f32::from_le_bytes(pixel[8..12].try_into().unwrap()) >= minimum_age)
+            .count();
+        mature as f32 / (self.settings.render_width * self.settings.render_height) as f32
     }
     #[cfg(test)]
     pub(crate) fn test_reservoir_maturity(&self, indirect: bool) -> (u32, u32) {
@@ -670,7 +756,7 @@ impl Renderer {
             "render size exceeds adapter texture limit"
         );
         ensure!(
-            (settings.temporal_max_history as u64 + 1) * settings.vpl_count as u64 * 48
+            (settings.restir_max_history as u64 + 1) * settings.vpl_count as u64 * 48
                 <= limits.max_storage_buffer_binding_size as u64,
             "VPL history budget exceeds adapter storage binding limit"
         );
@@ -1243,7 +1329,7 @@ impl Renderer {
         let archived_vpls = storage(
             &device,
             "VPL sample archive",
-            (settings.temporal_max_history as u64 + 1) * settings.vpl_count as u64 * 48,
+            (settings.restir_max_history as u64 + 1) * settings.vpl_count as u64 * 48,
         );
         let vpl_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("VPL output layout"),
@@ -1380,7 +1466,7 @@ impl Renderer {
         });
         let lshader = shader(
             &device,
-            "ReSTIR / selected visibility / denoising",
+            "ReSTIR / selected visibility",
             if filtered_fields {
                 filtered_shader_source("lighting")
             } else {
@@ -1397,7 +1483,6 @@ impl Renderer {
             "spatial_indirect",
             "resolve_direct",
             "resolve_indirect",
-            "denoise",
         ] {
             pipelines.insert(
                 name,
@@ -1411,6 +1496,7 @@ impl Renderer {
                 }),
             );
         }
+        let svgf = crate::svgf::Svgf::new(&device, &common_layout, &gl, w, h);
         let present_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("presentation"),
             entries: &[entry(0, wgpu::ShaderStages::FRAGMENT, tex(false))],
@@ -1483,6 +1569,7 @@ impl Renderer {
             direct_lighting,
             unused_lighting_output,
             histories,
+            svgf,
             display,
             gbuffer_group,
             direct,
@@ -1502,6 +1589,7 @@ impl Renderer {
             previous_vp,
             frame_index: 0,
             previous_generation: 0,
+            previous_debug: 0,
             debug_mode: 0,
             last_gpu_ms: None,
             last_pass_ms: HashMap::new(),
@@ -1511,6 +1599,21 @@ impl Renderer {
             timestamp_period,
         })
     }
+    #[cfg(test)]
+    pub(crate) fn test_reservoir_mature_fraction(&self, indirect: bool, minimum_age: u32) -> f32 {
+        let source = if indirect {
+            &self.indirect[2]
+        } else {
+            &self.direct[2]
+        };
+        let records = crate::gpu_tests::buffer(self, source);
+        let reservoirs = records.as_chunks::<32>().0;
+        let mature = reservoirs
+            .iter()
+            .filter(|record| u32::from_le_bytes(record[12..16].try_into().unwrap()) >= minimum_age)
+            .count();
+        mature as f32 / reservoirs.len() as f32
+    }
     fn pass_group(
         &self,
         input: usize,
@@ -1519,18 +1622,7 @@ impl Renderer {
         stage: &str,
     ) -> wgpu::BindGroup {
         let old = 1 - current;
-        let denoise = stage == "denoise";
-        let target = if denoise {
-            &self.histories[current]
-        } else {
-            &self.lighting
-        };
         let history = if output == 2 { 0 } else { 2 };
-        let source = if denoise {
-            &self.lighting
-        } else {
-            &self.histories[old]
-        };
         self.device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("lighting pass"),
             layout: &self.pass_layout,
@@ -1553,8 +1645,11 @@ impl Renderer {
                     8,
                     wgpu::BindingResource::TextureView(&self.histories[old].view),
                 ),
-                be(9, wgpu::BindingResource::TextureView(&target.view)),
-                be(10, wgpu::BindingResource::TextureView(&source.view)),
+                be(9, wgpu::BindingResource::TextureView(&self.lighting.view)),
+                be(
+                    10,
+                    wgpu::BindingResource::TextureView(&self.histories[old].view),
+                ),
                 be(12, self.direct[history].as_entire_binding()),
                 be(13, self.indirect[history].as_entire_binding()),
                 be(14, self.archived_vpls.as_entire_binding()),
@@ -1625,9 +1720,14 @@ impl Renderer {
                 s.sdf_soft_shadow_k,
                 0.,
             ],
-            rr: [s.vpl_rr_min_survival, s.vpl_rr_max_survival, 0., 0.],
+            rr: [
+                s.vpl_rr_min_survival,
+                s.vpl_rr_max_survival,
+                s.restir_max_history as f32,
+                0.,
+            ],
             flags: [
-                u32::from(self.frame_index > 0),
+                u32::from(self.frame_index > 0 && self.previous_debug == self.debug_mode),
                 self.previous_generation,
                 self.debug_mode,
                 0,
@@ -1774,7 +1874,7 @@ impl Renderer {
         // pool for the finite history window rather than duplicating its 48-byte
         // sample inside each pixel. Reject expired stamps before ring overwrite.
         let pool_bytes = s.vpl_count as u64 * 48;
-        let slot = self.frame_index % (s.temporal_max_history + 1);
+        let slot = self.frame_index % (s.restir_max_history + 1);
         encoder.copy_buffer_to_buffer(
             &self.vpls[current],
             0,
@@ -1809,7 +1909,7 @@ impl Renderer {
                 stamp += 1;
             }
         }
-        for name in ["resolve_direct", "resolve_indirect", "denoise"] {
+        for name in ["resolve_direct", "resolve_indirect"] {
             let group = self.pass_group(2, 0, current, name);
             let mut p = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
                 label: Some(name),
@@ -1826,6 +1926,23 @@ impl Renderer {
             }
             stamp += 1;
         }
+        self.svgf.encode(
+            &self.device,
+            encoder,
+            &self.common,
+            &self.gbuffer_group,
+            &self.lighting,
+            &self.histories[current],
+            &self.previous_depth,
+            &self.previous_normal,
+            current,
+            s.svgf_iterations,
+            self.debug_mode,
+        );
+        if profile && let Some(q) = &self.query {
+            encoder.write_timestamp(q, stamp);
+        }
+        stamp += 1;
         let extent = wgpu::Extent3d {
             width: s.render_width,
             height: s.render_height,
@@ -1855,6 +1972,7 @@ impl Renderer {
         }
         self.previous_vp = vp;
         self.previous_generation = scene.generation;
+        self.previous_debug = self.debug_mode;
         self.previous_models = scene
             .manifest
             .objects
@@ -1969,7 +2087,7 @@ impl Renderer {
                 "spatial_indirect",
                 "visibility_direct",
                 "visibility_indirect",
-                "denoise",
+                "svgf",
                 "history_present",
             ]
             .iter()
@@ -2143,7 +2261,14 @@ mod tests {
     }
     #[test]
     fn all_shaders_parse_and_validate() {
-        for stage in ["gbuffer", "vpl", "lighting", "present", "lighting_filtered"] {
+        for stage in [
+            "gbuffer",
+            "vpl",
+            "lighting",
+            "present",
+            "lighting_filtered",
+            "svgf",
+        ] {
             let s = if stage == "lighting_filtered" {
                 filtered_shader_source("lighting")
             } else {

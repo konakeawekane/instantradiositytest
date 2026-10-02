@@ -68,6 +68,10 @@ def main():
         if not args.no_editor:
             run('editor_smoke', [executable, '--editor-smoke', '--width', '960', '--height', '600', '--frames', '24', '--capture', OUTPUT / 'editor.png'])
         run('full_resolution', [executable, '--frames', '64', '--capture', OUTPUT / 'render.png', '--benchmark', OUTPUT / 'benchmark.json'])
+        # Exercise SVGF with either visibility domain independently as well as
+        # the combined signal. Its noise/edge/reset assertions run in gpu_tests.
+        for mode, name in [(1, 'direct'), (2, 'indirect')]:
+            run('svgf_' + name, [executable, '--debug', str(mode), '--frames', '64', '--capture', OUTPUT / ('svgf_' + name + '.png')])
         # Fixed scene assertion: this wall patch is lit and must contain no
         # near-black grid-boundary occlusion streaks. Reuse the diagnosed region.
         result = json.loads(run('lit_wall_image', [sys.executable, '-m', 'image_analysis_tools.render_debug', '--select', 'uv-rect', '0.1', '0.05', '0.28', '0.4', '--evaluate', 'occupancy', '--condition', 'R < 0.03 AND G < 0.03 AND B < 0.03', '--images', OUTPUT / 'render.png', '--compact']))
