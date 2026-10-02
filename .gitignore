@@ -1,1 +1,5 @@
 /target
+/artifacts/
+**/__pycache__/
+/assets/**/sdf_*.bin
+/assets/**/*.tmp

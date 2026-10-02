@@ -1,0 +1,20 @@
+{
+  "render_width": 1920,
+  "render_height": 1200,
+  "vpl_count": 100,
+  "vpl_max_bounces": 3,
+  "vpl_rr_min_survival": 0.1,
+  "vpl_rr_max_survival": 0.95,
+  "restir_direct_candidates": 8,
+  "restir_vpl_candidates": 8,
+  "restir_spatial_neighbors": 4,
+  "restir_spatial_radius": 12,
+  "depth_threshold": 0.03,
+  "normal_threshold": 0.85,
+  "temporal_history_weight": 0.98,
+  "temporal_max_history": 128,
+  "sdf_max_steps": 96,
+  "sdf_hit_epsilon": 0.001,
+  "sdf_soft_shadow_k": 16.0,
+  "target_frame_ms": 8.0
+}

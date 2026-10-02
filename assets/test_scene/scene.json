@@ -1,0 +1,427 @@
+{
+  "version": 1,
+  "meshes": [
+    {
+      "id": "Cone_ebdb0fbc48",
+      "geometry": {
+        "path": "meshes_da6c52e30c3f8f6a.bin",
+        "vertex_offset": 0,
+        "vertex_count": 186,
+        "index_offset": 11904,
+        "index_count": 186
+      },
+      "sdf": {
+        "path": "fields_8a586bd326c152ce.bin",
+        "offset": 0,
+        "resolution": 48,
+        "bounds_min": [
+          -1.1474086046218872,
+          -1.1474086046218872,
+          -1.1474086046218872
+        ],
+        "bounds_max": [
+          1.1474086046218872,
+          1.1474086046218872,
+          1.1474086046218872
+        ],
+        "conservative": true,
+        "query": "trilinear_bound",
+        "error_bound": 7.949480162125223e-06
+      }
+    },
+    {
+      "id": "Sphere_6bb3d262b2",
+      "geometry": {
+        "path": "meshes_da6c52e30c3f8f6a.bin",
+        "vertex_offset": 12648,
+        "vertex_count": 2880,
+        "index_offset": 196968,
+        "index_count": 2880
+      },
+      "sdf": {
+        "path": "fields_8a586bd326c152ce.bin",
+        "offset": 442368,
+        "resolution": 48,
+        "bounds_min": [
+          -1.1474075317382812,
+          -1.14740788936615,
+          -1.1474084854125977
+        ],
+        "bounds_max": [
+          1.1474082469940186,
+          1.1474084854125977,
+          1.1474084854125977
+        ],
+        "conservative": true,
+        "query": "trilinear_bound",
+        "error_bound": 7.94947728291963e-06
+      }
+    },
+    {
+      "id": "Torus_96fec337c7",
+      "geometry": {
+        "path": "meshes_da6c52e30c3f8f6a.bin",
+        "vertex_offset": 208488,
+        "vertex_count": 3456,
+        "index_offset": 429672,
+        "index_count": 3456
+      },
+      "sdf": {
+        "path": "fields_8a586bd326c152ce.bin",
+        "offset": 884736,
+        "resolution": 48,
+        "bounds_min": [
+          -1.4019453525543213,
+          -1.4019453525543213,
+          -0.4019452929496765
+        ],
+        "bounds_max": [
+          1.4019453525543213,
+          1.4019453525543213,
+          0.4019452929496765
+        ],
+        "conservative": true,
+        "query": "trilinear_bound",
+        "error_bound": 8.091933307975345e-06
+      }
+    },
+    {
+      "id": "Cube.001_e5c41ae47c",
+      "geometry": {
+        "path": "meshes_da6c52e30c3f8f6a.bin",
+        "vertex_offset": 443496,
+        "vertex_count": 36,
+        "index_offset": 445800,
+        "index_count": 36
+      },
+      "sdf": {
+        "path": "fields_8a586bd326c152ce.bin",
+        "offset": 1327104,
+        "resolution": 48,
+        "bounds_min": [
+          -2.3802664279937744,
+          -2.3802664279937744,
+          -0.5280896425247192
+        ],
+        "bounds_max": [
+          2.3802664279937744,
+          2.3802664279937744,
+          0.5280896425247192
+        ],
+        "conservative": true,
+        "query": "trilinear_bound",
+        "error_bound": 1.3629506599496601e-05
+      }
+    }
+  ],
+  "materials": [
+    {
+      "id": "cone_mat",
+      "base_color": [
+        0.8003387451171875,
+        0.8003387451171875,
+        0.8003387451171875,
+        1.0
+      ],
+      "roughness": 0.5,
+      "metallic": 0.0,
+      "normal_strength": 1.0,
+      "base_color_srgb": true,
+      "texture_channels": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "base_color_texture": null,
+      "roughness_texture": null,
+      "metallic_texture": null,
+      "normal_texture": null
+    },
+    {
+      "id": "sphere_mat",
+      "base_color": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "roughness": 0.5,
+      "metallic": 0.0,
+      "normal_strength": 1.0,
+      "base_color_srgb": true,
+      "texture_channels": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "base_color_texture": null,
+      "roughness_texture": null,
+      "metallic_texture": null,
+      "normal_texture": null
+    },
+    {
+      "id": "torus_mat",
+      "base_color": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "roughness": 0.5,
+      "metallic": 0.0,
+      "normal_strength": 1.0,
+      "base_color_srgb": true,
+      "texture_channels": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "base_color_texture": null,
+      "roughness_texture": null,
+      "metallic_texture": null,
+      "normal_texture": null
+    },
+    {
+      "id": "ground_mat",
+      "base_color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "roughness": 0.5,
+      "metallic": 0.0,
+      "normal_strength": 1.0,
+      "base_color_srgb": true,
+      "texture_channels": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "base_color_texture": null,
+      "roughness_texture": null,
+      "metallic_texture": null,
+      "normal_texture": null
+    },
+    {
+      "id": "wall_back_mat",
+      "base_color": [
+        1.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "roughness": 0.5,
+      "metallic": 0.0,
+      "normal_strength": 1.0,
+      "base_color_srgb": true,
+      "texture_channels": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "base_color_texture": null,
+      "roughness_texture": null,
+      "metallic_texture": null,
+      "normal_texture": null
+    },
+    {
+      "id": "wall_side_mat",
+      "base_color": [
+        0.0,
+        1.0,
+        0.0,
+        1.0
+      ],
+      "roughness": 0.5,
+      "metallic": 0.0,
+      "normal_strength": 1.0,
+      "base_color_srgb": true,
+      "texture_channels": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "base_color_texture": null,
+      "roughness_texture": null,
+      "metallic_texture": null,
+      "normal_texture": null
+    }
+  ],
+  "objects": [
+    {
+      "id": "Cone",
+      "mesh": "Cone_ebdb0fbc48",
+      "material": "cone_mat",
+      "transform": {
+        "position": [
+          0.047437965869903564,
+          -0.9945734739303589,
+          0.7228543758392334
+        ],
+        "rotation": [
+          -0.17243216931819916,
+          -0.13442331552505493,
+          -0.7731264233589172,
+          0.5953763723373413
+        ],
+        "scale": 0.4699057340621948
+      }
+    },
+    {
+      "id": "Sphere",
+      "mesh": "Sphere_6bb3d262b2",
+      "material": "sphere_mat",
+      "transform": {
+        "position": [
+          1.0808664560317993,
+          0.585002064704895,
+          0.7343202233314514
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "scale": 0.4924447536468506
+      }
+    },
+    {
+      "id": "Torus",
+      "mesh": "Torus_96fec337c7",
+      "material": "torus_mat",
+      "transform": {
+        "position": [
+          -0.9507824778556824,
+          0.6639034152030945,
+          1.2692105770111084
+        ],
+        "rotation": [
+          0.6589453816413879,
+          0.48726406693458557,
+          0.30570846796035767,
+          0.48467206954956055
+        ],
+        "scale": 0.5400755405426025
+      }
+    },
+    {
+      "id": "ground",
+      "mesh": "Cube.001_e5c41ae47c",
+      "material": "ground_mat",
+      "transform": {
+        "position": [
+          0.0,
+          0.0,
+          -0.3597829341888428
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "scale": 1.0
+      }
+    },
+    {
+      "id": "wall_back",
+      "mesh": "Cube.001_e5c41ae47c",
+      "material": "wall_back_mat",
+      "transform": {
+        "position": [
+          -2.116981267929077,
+          -0.05517461150884628,
+          1.788356900215149
+        ],
+        "rotation": [
+          0.0,
+          0.7071067690849304,
+          0.0,
+          0.7071067690849304
+        ],
+        "scale": 1.0
+      }
+    },
+    {
+      "id": "wall_side",
+      "mesh": "Cube.001_e5c41ae47c",
+      "material": "wall_side_mat",
+      "transform": {
+        "position": [
+          0.08060389757156372,
+          2.148259162902832,
+          1.788356900215149
+        ],
+        "rotation": [
+          0.5,
+          0.5,
+          -0.5,
+          0.5000000596046448
+        ],
+        "scale": 1.0
+      }
+    }
+  ],
+  "lights": [
+    {
+      "id": "Point",
+      "type": "point",
+      "position": [
+        -0.11554113030433655,
+        0.11698020994663239,
+        0.8662717938423157
+      ],
+      "color": [
+        1.0,
+        0.8894608020782471,
+        0.699999988079071
+      ],
+      "strength": 2.3873241463784303
+    },
+    {
+      "id": "Spot",
+      "type": "spot",
+      "position": [
+        0.0,
+        -2.3084845542907715,
+        2.647494316101074
+      ],
+      "color": [
+        0.800000011920929,
+        0.9419220685958862,
+        1.0
+      ],
+      "strength": 103.16502173235908,
+      "direction": [
+        -0.2241133153438568,
+        0.8045395612716675,
+        -0.549990177154541
+      ],
+      "angle_radians": 1.1257374286651611
+    }
+  ],
+  "camera": {
+    "position": [
+      4.599999904632568,
+      -3.7699997425079346,
+      3.068356990814209
+    ],
+    "rotation": [
+      0.5170935392379761,
+      0.24420824646949768,
+      0.3503248393535614,
+      0.7417877912521362
+    ],
+    "fov_y_radians": 0.442628915502508,
+    "near": 0.10000000149011612,
+    "far": 1000.0
+  }
+}
