@@ -4,14 +4,14 @@
     {
       "id": "Cone_ebdb0fbc48",
       "geometry": {
-        "path": "meshes_da6c52e30c3f8f6a.bin",
+        "path": "meshes_9e1a11caa7e0d0ee.bin",
         "vertex_offset": 0,
         "vertex_count": 186,
         "index_offset": 11904,
         "index_count": 186
       },
       "sdf": {
-        "path": "fields_8a586bd326c152ce.bin",
+        "path": "fields_ab55580bb9dab0a9.bin",
         "offset": 0,
         "resolution": 48,
         "bounds_min": [
@@ -32,14 +32,14 @@
     {
       "id": "Sphere_6bb3d262b2",
       "geometry": {
-        "path": "meshes_da6c52e30c3f8f6a.bin",
+        "path": "meshes_9e1a11caa7e0d0ee.bin",
         "vertex_offset": 12648,
         "vertex_count": 2880,
         "index_offset": 196968,
         "index_count": 2880
       },
       "sdf": {
-        "path": "fields_8a586bd326c152ce.bin",
+        "path": "fields_ab55580bb9dab0a9.bin",
         "offset": 442368,
         "resolution": 48,
         "bounds_min": [
@@ -58,17 +58,45 @@
       }
     },
     {
+      "id": "Suzanne.001_26f96e4070",
+      "geometry": {
+        "path": "meshes_9e1a11caa7e0d0ee.bin",
+        "vertex_offset": 208488,
+        "vertex_count": 778566,
+        "index_offset": 50036712,
+        "index_count": 778566
+      },
+      "sdf": {
+        "path": "fields_ab55580bb9dab0a9.bin",
+        "offset": 884736,
+        "resolution": 48,
+        "bounds_min": [
+          -1.0939165353775024,
+          -0.4674645662307739,
+          -0.8192682266235352
+        ],
+        "bounds_max": [
+          0.4223003089427948,
+          0.8968486785888672,
+          0.3461261987686157
+        ],
+        "conservative": true,
+        "query": "trilinear_bound",
+        "error_bound": 4.698258629284263e-06
+      }
+    },
+    {
       "id": "Torus_96fec337c7",
       "geometry": {
-        "path": "meshes_da6c52e30c3f8f6a.bin",
-        "vertex_offset": 208488,
+        "path": "meshes_9e1a11caa7e0d0ee.bin",
+        "vertex_offset": 53150976,
         "vertex_count": 3456,
-        "index_offset": 429672,
+        "index_offset": 53372160,
         "index_count": 3456
       },
       "sdf": {
-        "path": "fields_8a586bd326c152ce.bin",
-        "offset": 884736,
+        "path": "fields_ab55580bb9dab0a9.bin",
+        "offset": 1327104,
         "resolution": 48,
         "bounds_min": [
           -1.4019453525543213,
@@ -86,31 +114,87 @@
       }
     },
     {
-      "id": "Cube.001_e5c41ae47c",
+      "id": "Cube.001_09f20bb85b",
       "geometry": {
-        "path": "meshes_da6c52e30c3f8f6a.bin",
-        "vertex_offset": 443496,
+        "path": "meshes_9e1a11caa7e0d0ee.bin",
+        "vertex_offset": 53385984,
         "vertex_count": 36,
-        "index_offset": 445800,
+        "index_offset": 53388288,
         "index_count": 36
       },
       "sdf": {
-        "path": "fields_8a586bd326c152ce.bin",
-        "offset": 1327104,
+        "path": "fields_ab55580bb9dab0a9.bin",
+        "offset": 1769472,
         "resolution": 48,
         "bounds_min": [
-          -2.3802664279937744,
-          -2.3802664279937744,
-          -0.5280896425247192
+          -2.6737072467803955,
+          -8.15279483795166,
+          -0.8215304613113403
         ],
         "bounds_max": [
-          2.3802664279937744,
-          2.3802664279937744,
-          0.5280896425247192
+          6.923949241638184,
+          2.6737072467803955,
+          0.8215304613113403
         ],
         "conservative": true,
         "query": "trilinear_bound",
-        "error_bound": 1.3629506599496601e-05
+        "error_bound": 2.91223485992266e-05
+      }
+    },
+    {
+      "id": "Cube.002_5b73111504",
+      "geometry": {
+        "path": "meshes_9e1a11caa7e0d0ee.bin",
+        "vertex_offset": 53388432,
+        "vertex_count": 36,
+        "index_offset": 53390736,
+        "index_count": 36
+      },
+      "sdf": {
+        "path": "fields_ab55580bb9dab0a9.bin",
+        "offset": 2211840,
+        "resolution": 48,
+        "bounds_min": [
+          -2.573770046234131,
+          -7.999543190002441,
+          -0.7215932607650757
+        ],
+        "bounds_max": [
+          2.573770046234131,
+          2.573770046234131,
+          0.7215932607650757
+        ],
+        "conservative": true,
+        "query": "trilinear_bound",
+        "error_bound": 2.3695982911297587e-05
+      }
+    },
+    {
+      "id": "Cube.003_7ada0b1e91",
+      "geometry": {
+        "path": "meshes_9e1a11caa7e0d0ee.bin",
+        "vertex_offset": 53390880,
+        "vertex_count": 36,
+        "index_offset": 53393184,
+        "index_count": 36
+      },
+      "sdf": {
+        "path": "fields_ab55580bb9dab0a9.bin",
+        "offset": 2654208,
+        "resolution": 48,
+        "bounds_min": [
+          -2.5235893726348877,
+          -2.5235893726348877,
+          -0.6714127063751221
+        ],
+        "bounds_max": [
+          2.523589611053467,
+          6.643479347229004,
+          0.671412467956543
+        ],
+        "conservative": true,
+        "query": "trilinear_bound",
+        "error_bound": 2.1100932547223776e-05
       }
     }
   ],
@@ -144,6 +228,29 @@
         0.800000011920929,
         0.800000011920929,
         0.800000011920929,
+        1.0
+      ],
+      "roughness": 0.5,
+      "metallic": 0.0,
+      "normal_strength": 1.0,
+      "base_color_srgb": true,
+      "texture_channels": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "base_color_texture": null,
+      "roughness_texture": null,
+      "metallic_texture": null,
+      "normal_texture": null
+    },
+    {
+      "id": "__default",
+      "base_color": [
+        0.8,
+        0.8,
+        0.8,
         1.0
       ],
       "roughness": 0.5,
@@ -294,6 +401,25 @@
       }
     },
     {
+      "id": "Suzanne.001",
+      "mesh": "Suzanne.001_26f96e4070",
+      "material": "__default",
+      "transform": {
+        "position": [
+          -0.6444987058639526,
+          -4.287675380706787,
+          0.8200364708900452
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "scale": 1.0
+      }
+    },
+    {
       "id": "Torus",
       "mesh": "Torus_96fec337c7",
       "material": "torus_mat",
@@ -314,7 +440,7 @@
     },
     {
       "id": "ground",
-      "mesh": "Cube.001_e5c41ae47c",
+      "mesh": "Cube.001_09f20bb85b",
       "material": "ground_mat",
       "transform": {
         "position": [
@@ -333,7 +459,7 @@
     },
     {
       "id": "wall_back",
-      "mesh": "Cube.001_e5c41ae47c",
+      "mesh": "Cube.002_5b73111504",
       "material": "wall_back_mat",
       "transform": {
         "position": [
@@ -352,7 +478,7 @@
     },
     {
       "id": "wall_side",
-      "mesh": "Cube.001_e5c41ae47c",
+      "mesh": "Cube.003_7ada0b1e91",
       "material": "wall_side_mat",
       "transform": {
         "position": [
@@ -390,20 +516,20 @@
       "id": "Spot",
       "type": "spot",
       "position": [
-        0.0,
-        -2.3084845542907715,
-        2.647494316101074
+        2.2025928497314453,
+        -6.966460227966309,
+        2.293790817260742
       ],
       "color": [
         0.800000011920929,
         0.9419220685958862,
         1.0
       ],
-      "strength": 103.16502173235908,
+      "strength": 203.75090217967613,
       "direction": [
-        -0.2241133153438568,
-        0.8045395612716675,
-        -0.549990177154541
+        -0.7175288200378418,
+        0.49569806456565857,
+        -0.48932188749313354
       ],
       "angle_radians": 1.1257374286651611
     }
@@ -412,7 +538,7 @@
     "position": [
       4.599999904632568,
       -3.7699997425079346,
-      3.068356990814209
+      2.8583569526672363
     ],
     "rotation": [
       0.5170935392379761,
