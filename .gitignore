@@ -3,3 +3,4 @@
 **/__pycache__/
 /assets/**/sdf_*.bin
 /assets/**/*.tmp
+/image_analysis_tools/
